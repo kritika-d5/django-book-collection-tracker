@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block nav_communities %}active{% endblock %}
+
+{% block content %}
+  <div class="community-header">
+    <h2>{{ community.name }}</h2>
+    <p>{{ community.description }}</p>
+    <span class="community-meta">{{ community.member_count }} member{{ community.member_count|pluralize }}</span>
+    <div class="community-actions">
+      {% if is_member %}
+        <a href="{% url 'post_create' community.slug %}" class="btn btn--secondary">New Post</a>
+        {% if membership.role != 'admin' or community.member_count == 1 %}
+          <form method="POST" action="{% url 'leave_community' community.slug %}" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn--ghost">Leave Community</button>
+          </form>
+        {% endif %}
+      {% elif user.is_authenticated %}
+        <form method="POST" action="{% url 'join_community' community.slug %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn--secondary">Join Community</button>
+        </form>
+      {% else %}
+        <a href="{% url 'login' %}" class="btn btn--secondary">Log in to Join</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="section-header">
+    <h3>Discussion Posts</h3>
+  </div>
+
+  {% if posts %}
+    {% for post in posts %}
+      <div class="post-list-item">
+        <h4><a href="{% url 'post_detail' community.slug post.id %}">{{ post.title }}</a></h4>
+        <p class="meta-text">By {{ post.author.username }} · {{ post.created_at|timesince }} ago</p>
+        <p>{{ post.body|truncatewords:40 }}</p>
+        {% if post.book %}
+          <p class="meta-text">Linked book: <a href="{% url 'book_detail' post.book.id %}">{{ post.book.title }}</a></p>
+        {% endif %}
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="empty-state">
+      {% if is_member %}
+        No posts yet. <a href="{% url 'post_create' community.slug %}">Start the first discussion</a>.
+      {% else %}
+        No posts yet. Join this community to participate.
+      {% endif %}
+    </div>
+  {% endif %}
+{% endblock %}

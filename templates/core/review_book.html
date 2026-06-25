@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  {% include 'core/partials/_page_header.html' with title="Add/Edit Review" %}
+
+  <div class="review-book-preview">
+    <div class="book-detail-container">
+      <div>
+        {% if shelf_item.book.cover_image %}
+          <img class="book-detail-cover" src="{{ shelf_item.book.cover_image.url }}" alt="Cover for {{ shelf_item.book.title }}">
+        {% else %}
+          <img class="book-detail-cover" src="https://via.placeholder.com/200x300.png?text=No+Cover" alt="No cover available">
+        {% endif %}
+      </div>
+      <div class="book-detail-text">
+        <h3>{{ shelf_item.book.title }}</h3>
+        <p class="book-meta">by <strong>{{ shelf_item.book.authors.first.name }}</strong></p>
+      </div>
+    </div>
+  </div>
+
+  <form method="POST">
+    {% csrf_token %}
+
+    <div class="form-field">
+      <label for="{{ form.rating.id_for_label }}">Your Rating (1-5)</label>
+      {{ form.rating }}
+    </div>
+
+    <div class="form-field">
+      <label for="{{ form.review.id_for_label }}">Your Review</label>
+      {{ form.review }}
+    </div>
+
+    <button type="submit">Save Review</button>
+  </form>
+{% endblock %}

@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% block nav_dashboard %}active{% endblock %}
+
+{% block content %}
+  {% include 'core/partials/_page_header.html' with title="My Dashboard" %}
+  <p class="meta-text" style="margin-top:-16px;margin-bottom:24px;">Welcome, {{ user.username }}. Here are your bookshelves.</p>
+
+  <div class="section-header">
+    <h3>Currently Reading</h3>
+    <span class="section-count">{{ reading_books.count }}</span>
+  </div>
+  {% if reading_books %}
+    <div class="book-list">
+      {% for shelf_item in reading_books %}
+        {% include 'core/partials/_book_card.html' with book=shelf_item.book %}
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">You are not currently reading any books. Try searching for one!</div>
+  {% endif %}
+
+  <hr class="section-divider">
+
+  <div class="section-header">
+    <h3>Want to Read</h3>
+    <span class="section-count">{{ tbr_books.count }}</span>
+  </div>
+  {% if tbr_books %}
+    <div class="book-list">
+      {% for shelf_item in tbr_books %}
+        {% include 'core/partials/_book_card.html' with book=shelf_item.book %}
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">Your "Want to Read" shelf is empty.</div>
+  {% endif %}
+
+  <hr class="section-divider">
+
+  <div class="section-header">
+    <h3>Books I've Read</h3>
+    <span class="section-count">{{ read_books.count }}</span>
+  </div>
+  {% if read_books %}
+    <div class="book-list">
+      {% for shelf_item in read_books %}
+        <div class="book-item card--hoverable">
+          {% if shelf_item.book.cover_image %}
+            <img class="card-cover" src="{{ shelf_item.book.cover_image.url }}" alt="Cover for {{ shelf_item.book.title }}">
+          {% else %}
+            <img class="card-cover" src="https://via.placeholder.com/220x300.png?text=No+Cover" alt="No cover available">
+          {% endif %}
+
+          <a href="{% url 'book_detail' shelf_item.book.id %}">
+            <strong>{{ shelf_item.book.title }}</strong>
+          </a>
+          <p class="book-author">by {{ shelf_item.book.authors.first.name }}</p>
+          <p class="meta-text">Your rating: {{ shelf_item.rating|default:"Not rated" }}</p>
+
+          {% if shelf_item.review %}
+            <div class="user-review-snippet">
+              <strong>Your Review:</strong> {{ shelf_item.review|truncatewords:30 }}
+            </div>
+          {% endif %}
+
+          <a href="{% url 'review_book' shelf_item.id %}" class="btn btn--small btn--secondary">Add/Edit Review</a>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">You haven't marked any books as "Read" yet.</div>
+  {% endif %}
+{% endblock %}

@@ -1,0 +1,34 @@
+{% load humanize %}
+<div class="comment{% if comment.parent %} comment-reply{% endif %}">
+    <div class="comment__header">
+        <div class="avatar">{{ comment.user.username|slice:":1"|upper }}</div>
+        <div>
+            <strong>{{ comment.user.username }}</strong>
+            <span class="meta-text">· {{ comment.created_at|timesince }} ago</span>
+        </div>
+    </div>
+    <p class="comment__body">{{ comment.body|linebreaksbr }}</p>
+    <div class="comment-actions">
+        {% if user.is_authenticated and can_comment and not comment.parent %}
+            <button type="button" class="btn btn--ghost btn--small" data-reply-toggle="post-reply-form-{{ comment.id }}">Reply</button>
+        {% endif %}
+        {% if user.is_authenticated and comment.user == user or is_moderator %}
+            <form method="POST" action="{% url 'delete_post_comment' community.slug comment.id %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn--ghost btn--small btn--danger">Delete</button>
+            </form>
+        {% endif %}
+    </div>
+
+    {% if not comment.parent and can_comment %}
+        <form method="POST" action="{% url 'add_post_reply' community.slug comment.id %}" id="post-reply-form-{{ comment.id }}" class="reply-form comment-form">
+            {% csrf_token %}
+            <textarea name="body" rows="2" placeholder="Write a reply..." required maxlength="2000"></textarea>
+            <button type="submit" class="btn btn--small">Post Reply</button>
+        </form>
+    {% endif %}
+
+    {% for reply in comment.replies.all %}
+        {% include 'communities/partials/_post_comment.html' with comment=reply community=community post=post %}
+    {% endfor %}
+</div>

@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block nav_communities %}active{% endblock %}
+
+{% block content %}
+  {% include 'core/partials/_page_header.html' with title="Create a Community" subtitle="Start a discussion group for readers who share your interests." %}
+
+  <form method="POST" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    {% for field in form %}
+      <div class="form-field">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}
+          <div class="form-error">{{ field.errors }}</div>
+        {% endif %}
+      </div>
+    {% endfor %}
+
+    <button type="submit">Create Community</button>
+  </form>
+{% endblock %}

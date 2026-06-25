@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <div class="hero">
+    <h1>Your Personal Book Tracker</h1>
+    <p>Discover books, track your reading, share reviews, and join reader communities.</p>
+    {% if not user.is_authenticated %}
+      <div class="hero-actions">
+        <a href="{% url 'login' %}" class="btn">Log In</a>
+        <a href="{% url 'signup' %}" class="btn btn--secondary">Sign Up</a>
+      </div>
+    {% else %}
+      <div class="hero-actions">
+        <a href="{% url 'dashboard' %}" class="btn">Go to Dashboard</a>
+        <a href="{% url 'search' %}" class="btn btn--secondary">Search Books</a>
+      </div>
+    {% endif %}
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="section-header">
+    <h2>Browse by Genre</h2>
+  </div>
+
+  <div class="book-list">
+    {% for genre in genres %}
+      <a href="{% url 'genre_detail' genre.id %}" class="genre-card">
+        <strong>{{ genre.name }}</strong>
+      </a>
+    {% empty %}
+      <div class="empty-state">No genres available yet.</div>
+    {% endfor %}
+  </div>
+
+  {% if popular_communities %}
+    <hr class="section-divider">
+    <div class="section-header">
+      <h2>Popular Communities</h2>
+      <a href="{% url 'community_list' %}" class="btn btn--small btn--secondary">View All</a>
+    </div>
+    <div class="community-grid">
+      {% for community in popular_communities %}
+        <a href="{% url 'community_detail' community.slug %}" class="community-card">
+          <h3>{{ community.name }}</h3>
+          <p>{{ community.description|truncatewords:20 }}</p>
+          <span class="community-meta">{{ community.member_count }} member{{ community.member_count|pluralize }}</span>
+        </a>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endblock %}

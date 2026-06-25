@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block nav_search %}active{% endblock %}
+
+{% block content %}
+  {% include 'core/partials/_page_header.html' with title="Search for a Book" subtitle="Find books by title or author name." %}
+
+  <form method="GET" action="{% url 'search' %}" class="search-form">
+    <input type="search" name="q" placeholder="e.g. Dune" value="{{ query }}">
+    <button type="submit">Search</button>
+  </form>
+
+  <hr class="section-divider">
+
+  <h3>Results</h3>
+
+  {% if results %}
+    <p class="meta-text">Found {{ results.count }} book{{ results.count|pluralize }} matching "{{ query }}".</p>
+    <div class="book-list">
+      {% for book in results %}
+        {% include 'core/partials/_book_card.html' with book=book show_shelf_form=True %}
+      {% endfor %}
+    </div>
+  {% else %}
+    {% if query %}
+      <div class="empty-state">No books found matching "{{ query }}".</div>
+    {% else %}
+      <div class="empty-state">Type a book title above to find it in our catalog.</div>
+    {% endif %}
+  {% endif %}
+{% endblock %}

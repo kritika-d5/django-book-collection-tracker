@@ -1,0 +1,38 @@
+{% load humanize %}
+{% load humanize %}
+<div class="review-card">
+    <div class="review-card__header">
+        <div class="avatar">{{ review_item.user.username|slice:":1"|upper }}</div>
+        <div class="review-card__meta">
+            <div class="review-card__username">{{ review_item.user.username }}</div>
+            <div class="meta-text">
+                <span class="star-rating">{% for i in "12345" %}{% if forloop.counter <= review_item.rating %}★{% else %}☆{% endif %}{% endfor %}</span>
+                {{ review_item.rating }} out of 5
+                {% if review_item.reviewed_at %}
+                    · Reviewed {{ review_item.reviewed_at|timesince }} ago
+                {% endif %}
+            </div>
+        </div>
+        <span class="rating-badge">{{ review_item.rating }}/5</span>
+    </div>
+
+    {% if review_item.review %}
+        <p class="review-card__body">{{ review_item.review|linebreaksbr }}</p>
+    {% endif %}
+
+    <div class="comment-section">
+        {% if review_item.comments.all %}
+            {% for comment in review_item.comments.all %}
+                {% include 'core/partials/_comment_item.html' with comment=comment review_item=review_item %}
+            {% endfor %}
+        {% endif %}
+
+        {% if user.is_authenticated %}
+            <form method="POST" action="{% url 'add_comment' review_item.id %}" class="comment-form">
+                {% csrf_token %}
+                <textarea name="body" rows="2" placeholder="Write a comment..." required maxlength="2000"></textarea>
+                <button type="submit" class="btn btn--small">Post Comment</button>
+            </form>
+        {% endif %}
+    </div>
+</div>

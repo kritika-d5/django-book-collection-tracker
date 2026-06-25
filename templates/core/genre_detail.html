@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  {% include 'core/partials/_page_header.html' with title=genre.name subtitle="Browse books in this genre." %}
+
+  <div class="book-list">
+    {% for book in books %}
+      {% include 'core/partials/_book_card.html' with book=book %}
+    {% empty %}
+      <div class="empty-state">There are no books currently listed in this genre.</div>
+    {% endfor %}
+  </div>
+{% endblock %}

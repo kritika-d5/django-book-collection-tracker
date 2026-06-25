@@ -1,0 +1,36 @@
+<div class="book-item card--hoverable">
+    {% if book.cover_image %}
+        <img class="card-cover" src="{{ book.cover_image.url }}" alt="Cover for {{ book.title }}">
+    {% else %}
+        <img class="card-cover" src="https://via.placeholder.com/220x300.png?text=No+Cover" alt="No cover available">
+    {% endif %}
+
+    <a href="{% url 'book_detail' book.id %}">
+        <strong>{{ book.title }}</strong>
+    </a>
+
+    <p class="book-author">
+        {% for author in book.authors.all %}
+            <a href="{% url 'author_detail' author.id %}">{{ author.name }}</a>{% if not forloop.last %}, {% endif %}
+        {% empty %}
+            Unknown author
+        {% endfor %}
+    </p>
+
+    {% if book.description %}
+        <p class="book-description">{{ book.description }}</p>
+    {% endif %}
+
+    {% if show_shelf_form and user.is_authenticated %}
+        <form method="POST" action="{% url 'add_to_shelf' %}" class="add-shelf-form">
+            {% csrf_token %}
+            <input type="hidden" name="book_id" value="{{ book.id }}">
+            <select name="shelf_type">
+                <option value="tbr">Want to Read</option>
+                <option value="reading">Currently Reading</option>
+                <option value="read">Read</option>
+            </select>
+            <button type="submit" class="btn btn--full">Add to Shelf</button>
+        </form>
+    {% endif %}
+</div>

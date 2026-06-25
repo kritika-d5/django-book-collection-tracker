@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block nav_communities %}active{% endblock %}
+
+{% block content %}
+  <p class="meta-text"><a href="{% url 'community_detail' community.slug %}">← Back to {{ community.name }}</a></p>
+
+  <div class="page-header">
+    <h1>{{ post.title }}</h1>
+    <p class="meta-text">By {{ post.author.username }} · {{ post.created_at|timesince }} ago</p>
+  </div>
+
+  <div class="review-card">
+    <p>{{ post.body|linebreaksbr }}</p>
+  </div>
+
+  {% if post.book %}
+    <div class="linked-book-mini">
+      <strong>Linked Book:</strong>
+      <a href="{% url 'book_detail' post.book.id %}">{{ post.book.title }}</a>
+    </div>
+  {% endif %}
+
+  {% if is_moderator or post.author == user %}
+    <form method="POST" action="{% url 'delete_post' community.slug post.id %}" style="margin-bottom:24px;">
+      {% csrf_token %}
+      <button type="submit" class="btn btn--small btn--danger" onclick="return confirm('Delete this post?');">Delete Post</button>
+    </form>
+  {% endif %}
+
+  <div class="section-header">
+    <h3>Comments</h3>
+  </div>
+
+  {% if post.comments.all %}
+    {% for comment in post.comments.all %}
+      {% include 'communities/partials/_post_comment.html' with comment=comment community=community post=post %}
+    {% endfor %}
+  {% else %}
+    <div class="empty-state">No comments yet.</div>
+  {% endif %}
+
+  {% if can_comment %}
+    <form method="POST" action="{% url 'add_post_comment' community.slug post.id %}" class="comment-form">
+      {% csrf_token %}
+      <textarea name="body" rows="3" placeholder="Write a comment..." required maxlength="2000"></textarea>
+      <button type="submit" class="btn btn--small">Post Comment</button>
+    </form>
+  {% elif user.is_authenticated %}
+    <div class="login-prompt">Join this community to comment on posts.</div>
+  {% else %}
+    <div class="login-prompt"><a href="{% url 'login' %}">Log in</a> and join the community to comment.</div>
+  {% endif %}
+{% endblock %}

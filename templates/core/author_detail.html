@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  {% include 'core/partials/_page_header.html' with title=author.name subtitle="Books by this author." %}
+
+  <div class="book-list">
+    {% for book in books %}
+      {% include 'core/partials/_book_card.html' with book=book %}
+    {% empty %}
+      <div class="empty-state">There are no books currently listed for this author.</div>
+    {% endfor %}
+  </div>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block nav_communities %}active{% endblock %}
+
+{% block content %}
+  <div class="section-header">
+    <div>
+      {% include 'core/partials/_page_header.html' with title="Communities" subtitle="Join discussion groups and talk about books with other readers." %}
+    </div>
+    <a href="{% if user.is_authenticated %}{% url 'community_create' %}{% else %}{% url 'login' %}{% endif %}" class="btn">Create Community</a>
+  </div>
+
+  {% if joined_communities %}
+    <h3>Your Communities</h3>
+    <div class="community-grid">
+      {% for community in joined_communities %}
+        <a href="{% url 'community_detail' community.slug %}" class="community-card">
+          <h3>{{ community.name }}</h3>
+          <p>{{ community.description|truncatewords:20 }}</p>
+          <span class="community-meta">{{ community.member_count }} member{{ community.member_count|pluralize }}</span>
+        </a>
+      {% endfor %}
+    </div>
+    <hr class="section-divider">
+  {% endif %}
+
+  <h3>Discover Communities</h3>
+  {% if communities %}
+    <div class="community-grid">
+      {% for community in communities %}
+        <a href="{% url 'community_detail' community.slug %}" class="community-card">
+          <h3>{{ community.name }}</h3>
+          <p>{{ community.description|truncatewords:20 }}</p>
+          <span class="community-meta">{{ community.member_count }} member{{ community.member_count|pluralize }}</span>
+          {% if community.id in joined_ids %}
+            <span class="meta-text">Joined</span>
+          {% endif %}
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">No communities yet. Be the first to create one!</div>
+  {% endif %}
+{% endblock %}

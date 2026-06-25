@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <div class="form-container">
+    <h2>Log In</h2>
+    <form method="post">
+      {% csrf_token %}
+
+      <div class="form-field">
+        <label for="{{ form.username.id_for_label }}">Username</label>
+        {{ form.username }}
+      </div>
+
+      <div class="form-field">
+        <label for="{{ form.password.id_for_label }}">Password</label>
+        {{ form.password }}
+      </div>
+
+      <button type="submit">Log In</button>
+    </form>
+    <p class="meta-text" style="text-align:center;margin-top:16px;">
+      Don't have an account? <a href="{% url 'signup' %}">Sign up</a>
+    </p>
+  </div>
+{% endblock %}

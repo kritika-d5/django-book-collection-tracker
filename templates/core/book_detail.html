@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <div class="book-detail-container">
+    <div>
+      {% if book.cover_image %}
+        <img class="book-detail-cover" src="{{ book.cover_image.url }}" alt="Cover for {{ book.title }}">
+      {% else %}
+        <img class="book-detail-cover" src="https://via.placeholder.com/200x300.png?text=No+Cover" alt="No cover available">
+      {% endif %}
+    </div>
+
+    <div class="book-detail-text">
+      <h2>{{ book.title }}</h2>
+      <p class="book-meta">by
+        {% for author in book.authors.all %}
+          <a href="{% url 'author_detail' author.id %}"><strong>{{ author.name }}</strong></a>{% if not forloop.last %}, {% endif %}
+        {% endfor %}
+      </p>
+
+      <p><strong>Description</strong></p>
+      <p>{{ book.description|linebreaksbr|default:"No description available." }}</p>
+
+      {% if user.is_authenticated %}
+        <div class="add-shelf-form">
+          <form method="POST" action="{% url 'add_to_shelf' %}">
+            {% csrf_token %}
+            <input type="hidden" name="book_id" value="{{ book.id }}">
+            <label for="shelf_type">Add to your shelf</label>
+            <select name="shelf_type" id="shelf_type">
+              <option value="tbr">Want to Read</option>
+              <option value="reading">Currently Reading</option>
+              <option value="read">Read</option>
+            </select>
+            <button type="submit" class="btn btn--full">Add to Shelf</button>
+          </form>
+        </div>
+      {% else %}
+        <div class="login-prompt">
+          <a href="{% url 'login' %}">Log in</a> to add this book to your shelf.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <hr class="section-divider">
+
+  {% if avg_rating %}
+    <div class="rating-summary">
+      <span class="rating-badge">{{ avg_rating }} / 5</span>
+      <div>
+        <strong>Community Rating</strong>
+        <p class="meta-text">{{ review_count }} review{{ review_count|pluralize }}</p>
+      </div>
+    </div>
+  {% else %}
+    <div class="empty-state">No ratings submitted yet.</div>
+  {% endif %}
+
+  <div class="section-header">
+    <h3>Community Reviews</h3>
+  </div>
+
+  {% if reviews %}
+    {% for review_item in reviews %}
+      {% include 'core/partials/_review_card.html' with review_item=review_item %}
+    {% endfor %}
+
+    {% if reviews.has_other_pages %}
+      <div class="pagination">
+        {% if reviews.has_previous %}
+          <a href="?page={{ reviews.previous_page_number }}">Previous</a>
+        {% endif %}
+        <span class="current">Page {{ reviews.number }} of {{ reviews.paginator.num_pages }}</span>
+        {% if reviews.has_next %}
+          <a href="?page={{ reviews.next_page_number }}">Next</a>
+        {% endif %}
+      </div>
+    {% endif %}
+  {% else %}
+    <div class="empty-state">No reviews have been written for this book yet.</div>
+  {% endif %}
+{% endblock %}
