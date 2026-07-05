@@ -17,8 +17,14 @@ staticfiles/
 # Claude Code
 .claude/
 
+# Vercel
+.vercel/
+
 # Environment variables
 .env
+
+# Data dumps (contain user rows / password hashes — never commit)
+seed.json
 
 # VS Code
 .vscode/

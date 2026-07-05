@@ -1,158 +1,135 @@
-# Deploying Athenaeum to PythonAnywhere (free tier)
+# Deploying Athenaeum to Vercel + Neon + Cloudinary
 
-This app is production-ready: settings read secrets from the environment, static
-files are collected to `staticfiles/`, and HTTPS hardening turns on automatically
-when `DEBUG=False`. Follow these steps once and you'll have a live site at
-`https://YOURNAME.pythonanywhere.com`.
+Vercel runs the app as serverless functions, so the two pieces of *state* live
+in managed services:
 
-Replace **`YOURNAME`** everywhere below with your PythonAnywhere username.
+- **Neon** — Postgres database (Vercel can't run SQLite; the filesystem is read-only)
+- **Cloudinary** — stores uploaded book/community covers (same reason)
+- **Vercel** — runs Django and serves static files
+
+The code already switches to these automatically when their environment variables
+are present, and stays on local SQLite + local disk when they aren't.
 
 ---
 
-## 1. Push your code to GitHub
+## 1. Create the managed services
 
-From your project folder locally:
-
-```bash
-git add .
-git commit -m "Prep for deployment"
-git push
+**Neon** (https://neon.tech): create a project, then copy the **pooled**
+connection string (the host contains `-pooler`). It looks like:
+```
+postgresql://USER:PASSWORD@ep-xxx-pooler.REGION.aws.neon.tech/neondb?sslmode=require
 ```
 
-> Your `.gitignore` deliberately excludes `db.sqlite3`, `media/`, and `.env`, so
-> the server starts with an **empty database and no cover images**. Step 7 seeds them.
+**Cloudinary** (https://cloudinary.com): from the dashboard copy the
+**API environment variable**:
+```
+cloudinary://API_KEY:API_SECRET@CLOUD_NAME
+```
 
-## 2. Generate a production secret key
-
-Run this locally and copy the output — you'll paste it in step 5:
-
+**Generate a Django secret key** locally:
 ```bash
 python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
 ```
 
-## 3. Create the PythonAnywhere account + virtualenv
+## 2. Seed the database + covers (run locally, pointed at the cloud)
 
-1. Sign up (free "Beginner" plan) at https://www.pythonanywhere.com.
-2. Open a **Bash console** (Consoles tab) and clone your repo:
-   ```bash
-   git clone https://github.com/YOURUSER/book_tracker_project.git
-   cd book_tracker_project
-   ```
-3. Create a virtualenv and install dependencies:
-   ```bash
-   mkvirtualenv --python=/usr/bin/python3.11 athenaeum-venv
-   pip install -r requirements.txt
-   ```
-   (The prompt now shows `(athenaeum-venv)`. To return to it later:
-   `workon athenaeum-venv`.)
+You run these from your own machine with the cloud connection strings set, so
+your data and covers land in Neon + Cloudinary before the first deploy. Pick the
+option that fits. Examples use **Windows PowerShell** (macOS/Linux: swap
+`$env:VAR="..."` for `export VAR="..."`).
 
-## 4. Create the web app (manual configuration)
+### Option A — keep the exact data you already have
 
-1. **Web** tab → **Add a new web app** → **Manual configuration** → **Python 3.11**.
-2. In the web app config page, set:
-   - **Source code:** `/home/YOURNAME/book_tracker_project`
-   - **Virtualenv:** `/home/YOURNAME/.virtualenvs/athenaeum-venv`
+First dump your current local data **before** setting any cloud variables (so it
+reads your local SQLite):
 
-## 5. Configure the WSGI file (this is where env vars go)
-
-On the Web tab, click the **WSGI configuration file** link
-(`/var/www/YOURNAME_pythonanywhere_com_wsgi.py`). Delete everything in it and
-replace with:
-
-```python
-import os
-import sys
-
-path = '/home/YOURNAME/book_tracker_project'
-if path not in sys.path:
-    sys.path.insert(0, path)
-
-os.environ['DJANGO_SETTINGS_MODULE'] = 'book_tracker_project.settings'
-os.environ['DJANGO_SECRET_KEY'] = 'PASTE-THE-KEY-FROM-STEP-2'
-os.environ['DJANGO_DEBUG'] = 'False'
-os.environ['DJANGO_ALLOWED_HOSTS'] = 'YOURNAME.pythonanywhere.com'
-
-from django.core.wsgi import get_wsgi_application
-application = get_wsgi_application()
+```powershell
+python -X utf8 manage.py dumpdata --natural-primary --natural-foreign `
+  -e contenttypes -e auth.permission -e sessions -e admin.logentry `
+  --indent 2 -o seed.json
 ```
 
-Save it.
+Then point at the cloud and load everything — rows into Neon, cover files into
+Cloudinary:
 
-## 6. Add static & media file mappings
+```powershell
+$env:DATABASE_URL="postgresql://...-pooler...sslmode=require"
+$env:CLOUDINARY_URL="cloudinary://API_KEY:API_SECRET@CLOUD_NAME"
 
-Still on the Web tab, scroll to **Static files** and add two rows:
+python manage.py migrate                     # build the schema in Neon
+python manage.py loaddata seed.json          # restore your rows
+python manage.py upload_media_to_cloudinary  # push your local covers to Cloudinary
+```
 
-| URL | Directory |
-|--------|-----------|
-| `/static/` | `/home/YOURNAME/book_tracker_project/staticfiles` |
-| `/media/`  | `/home/YOURNAME/book_tracker_project/media` |
+`loaddata` restores the cover *paths*; `upload_media_to_cloudinary` uploads the
+matching image *files* under those same names so they display. Run it with
+`--dry-run` first to preview. Your dumped users come across too, so
+`createsuperuser` is optional.
 
-(WhiteNoise also serves `/static/` as a fallback, but this mapping is faster
-because PythonAnywhere's web server handles it directly.)
+### Option B — start fresh from Open Library
 
-## 7. Migrate, collect static, seed data
+Skip the dump entirely; import a new catalog (books **and** covers) straight into
+the cloud:
 
-Back in the Bash console (with `(athenaeum-venv)` active, inside the project folder):
+```powershell
+$env:DATABASE_URL="postgresql://...-pooler...sslmode=require"
+$env:CLOUDINARY_URL="cloudinary://API_KEY:API_SECRET@CLOUD_NAME"
 
-```bash
 python manage.py migrate
-python manage.py collectstatic --noinput
+python manage.py import_books fantasy "science fiction" romance --limit 12
 python manage.py createsuperuser
 ```
 
-Now fill the catalog. **Pick one:**
-
-**Option A — import fresh from Open Library (try this first):**
-```bash
-python manage.py import_books fantasy "science fiction" romance --limit 12
-```
-This downloads books *and* covers server-side. It only works if Open Library is
-on PythonAnywhere's free-tier allowlist — if it fails with a connection error,
-use Option B.
-
-**Option B — copy the data you already have (always works):**
-1. Locally, dump your current data. The `-X utf8` flag is required on Windows so
-   accented names (é, ö, …) don't crash the export:
-   ```bash
-   python -X utf8 manage.py dumpdata --natural-primary --natural-foreign \
-     -e contenttypes -e auth.permission -e sessions -e admin.logentry \
-     --indent 2 -o seed.json
-   ```
-2. Upload `seed.json` **and** your local `media/` folder to
-   `/home/YOURNAME/book_tracker_project/` using the PythonAnywhere **Files** tab
-   (or `git`/zip them across).
-3. On the server:
-   ```bash
-   python manage.py loaddata seed.json
-   ```
-
-## 8. Reload and visit
-
-Click the big green **Reload** button on the Web tab, then open
-`https://YOURNAME.pythonanywhere.com`. Done.
-
----
-
-## Updating the site later
+## 3. Push to GitHub
 
 ```bash
-workon athenaeum-venv
-cd ~/book_tracker_project
-git pull
-pip install -r requirements.txt        # only if dependencies changed
-python manage.py migrate               # only if models changed
-python manage.py collectstatic --noinput   # only if static/ changed
+git add .
+git commit -m "Add Vercel + Neon + Cloudinary deployment config"
+git push
 ```
-Then hit **Reload** on the Web tab.
 
-## Good to know
+## 4. Import the project into Vercel
 
-- **Keep it alive:** free apps are disabled after 3 months unless you click a
-  "run until 3 months from now" button on the Web tab (you'll get an email).
-- **Environment variables** all live in the WSGI file (step 5). Optional extras:
-  - `DJANGO_SSL_REDIRECT=False` — disable the automatic HTTP→HTTPS redirect.
-  - `DJANGO_HSTS_SECONDS=31536000` — enable HSTS once you're sure the site is
-    HTTPS-only (leave unset while testing).
-- **Whitelist:** on the free tier, server-side calls to the internet only reach
-  allowlisted sites. This does **not** affect your design (fonts/images load in
-  the visitor's browser) — only server-side fetches like `import_books`.
+1. At https://vercel.com → **Add New → Project** → import your GitHub repo.
+2. Framework preset: **Other** (the included `vercel.json` handles the build).
+3. Before deploying, add **Environment Variables** (Settings → Environment Variables):
+
+   | Name | Value |
+   |------|-------|
+   | `DJANGO_SECRET_KEY` | the key from step 1 |
+   | `DJANGO_DEBUG` | `False` |
+   | `DJANGO_ALLOWED_HOSTS` | `.vercel.app` |
+   | `DATABASE_URL` | your Neon pooled URL |
+   | `CLOUDINARY_URL` | your Cloudinary URL |
+
+4. Click **Deploy**. When it finishes, open the `*.vercel.app` URL.
+
+> Using a custom domain later? Add it to `DJANGO_ALLOWED_HOSTS` (comma-separated,
+> e.g. `.vercel.app,athenaeum.com`) and redeploy — CSRF origins update automatically.
+
+## How it fits together
+
+- `vercel.json` — one build runs `book_tracker_project/wsgi.py` as the Python
+  serverless app; another runs `build_files.sh` (installs deps, `collectstatic`)
+  and serves `/static/*` from `staticfiles/`.
+- `wsgi.py` exposes `app` for Vercel's Python runtime.
+- Static files: WhiteNoise (compressed) as a fallback; Vercel serves `/static/`
+  directly via the route.
+
+## Updating the site
+
+Just `git push` — Vercel redeploys automatically. If you changed models, run
+`python manage.py migrate` locally with `DATABASE_URL` set (Vercel's build does
+not run migrations).
+
+## Notes
+
+- **Migrations run from your machine**, not from Vercel's build — that's why
+  step 2 runs `migrate` locally against Neon.
+- **Serverless connections:** the code uses `conn_max_age=0` and you're using
+  Neon's pooled endpoint, which is built for serverless — no extra tuning needed.
+- **Optional hardening env vars:** `DJANGO_SSL_REDIRECT=False` to disable the
+  HTTP→HTTPS redirect (Vercel already serves HTTPS), `DJANGO_HSTS_SECONDS=31536000`
+  to enable HSTS once you're confident the site is HTTPS-only.
+- **Alternative host:** PythonAnywhere keeps SQLite + local media with no external
+  services, if you ever want a simpler (non-serverless) option.
