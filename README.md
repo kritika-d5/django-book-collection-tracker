@@ -59,20 +59,3 @@ Use `--no-covers` to skip image downloads or `--dry-run` to preview.
 | `shelves` | `UserShelf` (shelf status, rating, review) and review comments |
 | `communities` | `Community`, memberships, and discussion posts |
 
-## Deployment
-
-The project reads secrets from the environment and hardens itself when
-`DEBUG=False`. See [DEPLOY.md](DEPLOY.md) for a step-by-step guide to hosting it
-free on PythonAnywhere.
-
-## Configuration
-
-Set these environment variables in production (defaults are dev-friendly):
-
-| Variable | Purpose |
-|----------|---------|
-| `DJANGO_SECRET_KEY` | Django secret key |
-| `DJANGO_DEBUG` | `False` in production |
-| `DJANGO_ALLOWED_HOSTS` | Comma-separated hostnames |
-| `DJANGO_SSL_REDIRECT` | Optional; `False` to disable HTTP→HTTPS redirect |
-| `DJANGO_HSTS_SECONDS` | Optional; enable HSTS once HTTPS-only |
