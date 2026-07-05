@@ -59,24 +59,4 @@ Use `--no-covers` to skip image downloads or `--dry-run` to preview.
 | `shelves` | `UserShelf` (shelf status, rating, review) and review comments |
 | `communities` | `Community`, memberships, and discussion posts |
 
-## Deployment
 
-The project reads secrets from the environment and hardens itself when
-`DEBUG=False`. It runs on local SQLite + disk by default, and switches to
-Postgres and Cloudinary automatically when their URLs are set. See
-[DEPLOY.md](DEPLOY.md) for a step-by-step guide to hosting it on
-**Vercel + Neon + Cloudinary**.
-
-## Configuration
-
-Set these environment variables in production (all have dev-friendly defaults):
-
-| Variable | Purpose |
-|----------|---------|
-| `DJANGO_SECRET_KEY` | Django secret key |
-| `DJANGO_DEBUG` | `False` in production |
-| `DJANGO_ALLOWED_HOSTS` | Comma-separated hostnames (e.g. `.vercel.app`) |
-| `DATABASE_URL` | Postgres URL (e.g. Neon); falls back to SQLite |
-| `CLOUDINARY_URL` | Cloudinary URL for uploaded covers; falls back to local disk |
-| `DJANGO_SSL_REDIRECT` | Optional; `False` to disable HTTP→HTTPS redirect |
-| `DJANGO_HSTS_SECONDS` | Optional; enable HSTS once HTTPS-only |
