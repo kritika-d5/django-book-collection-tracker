@@ -3,10 +3,26 @@
 {% block content %}
   <div class="book-detail-container">
     <div>
+      <div class="book-flip{% if not book.cover_image %} is-open book-flip--bare{% endif %}" id="bookFlip">
+        <div class="book-flip__page">
+          {% if user.is_authenticated %}
+            <span class="page-ribbon{% if user_shelf_type %} page-ribbon--{{ user_shelf_type }}{% endif %}" id="shelfRibbon" title="Drag me onto a shelf below"></span>
+          {% endif %}
+          <p class="page-kicker">From the catalog</p>
+          <h3 class="page-title">{{ book.title }}</h3>
+          <div class="page-text">{{ book.description|linebreaksbr|default:"No description available." }}</div>
+        </div>
+        {% if book.cover_image %}
+          <button class="book-flip__cover" type="button" aria-label="Open the book" aria-expanded="false">
+            <span class="cover-face cover-face--front">
+              <img src="{{ book.cover_image.url }}" alt="Cover for {{ book.title }}">
+            </span>
+            <span class="cover-face cover-face--back"></span>
+          </button>
+        {% endif %}
+      </div>
       {% if book.cover_image %}
-        <img class="book-detail-cover" src="{{ book.cover_image.url }}" alt="Cover for {{ book.title }}">
-      {% else %}
-        <img class="book-detail-cover" src="https://via.placeholder.com/200x300.png?text=No+Cover" alt="No cover available">
+        <p class="flip-hint meta-text" id="flipHint">Click the cover to open</p>
       {% endif %}
     </div>
 
@@ -18,23 +34,19 @@
         {% endfor %}
       </p>
 
-      <p><strong>Description</strong></p>
-      <p>{{ book.description|linebreaksbr|default:"No description available." }}</p>
-
       {% if user.is_authenticated %}
-        <div class="add-shelf-form">
-          <form method="POST" action="{% url 'add_to_shelf' %}">
-            {% csrf_token %}
-            <input type="hidden" name="book_id" value="{{ book.id }}">
-            <label for="shelf_type">Add to your shelf</label>
-            <select name="shelf_type" id="shelf_type">
-              <option value="tbr">Want to Read</option>
-              <option value="reading">Currently Reading</option>
-              <option value="read">Read</option>
-            </select>
-            <button type="submit" class="btn btn--full">Add to Shelf</button>
-          </form>
-        </div>
+        <p class="meta-text">File this book under a shelf &mdash; drag the ribbon from the page, or click a slot.</p>
+        <form method="POST" action="{% url 'add_to_shelf' %}" id="ribbonForm">
+          {% csrf_token %}
+          <input type="hidden" name="book_id" value="{{ book.id }}">
+          <input type="hidden" name="shelf_type" value="">
+          <input type="hidden" name="next" value="{{ request.path }}">
+          <div class="shelf-slots">
+            <button type="button" class="shelf-slot{% if user_shelf_type == 'tbr' %} is-current{% endif %}" data-shelf="tbr">Want to Read</button>
+            <button type="button" class="shelf-slot{% if user_shelf_type == 'reading' %} is-current{% endif %}" data-shelf="reading">Currently Reading</button>
+            <button type="button" class="shelf-slot{% if user_shelf_type == 'read' %} is-current{% endif %}" data-shelf="read">Read</button>
+          </div>
+        </form>
       {% else %}
         <div class="login-prompt">
           <a href="{% url 'login' %}">Log in</a> to add this book to your shelf.
@@ -94,4 +106,73 @@
   {% else %}
     <div class="empty-state">No reviews have been written for this book yet.</div>
   {% endif %}
+
+  <script>
+    (function () {
+      var flip = document.getElementById('bookFlip');
+      if (!flip) return;
+      var cover = flip.querySelector('.book-flip__cover');
+      var hint = document.getElementById('flipHint');
+      if (cover) {
+        cover.addEventListener('click', function () {
+          var open = flip.classList.toggle('is-open');
+          cover.setAttribute('aria-expanded', open ? 'true' : 'false');
+          if (hint) hint.textContent = open ? 'Click the cover to close' : 'Click the cover to open';
+        });
+      }
+
+      var ribbon = document.getElementById('shelfRibbon');
+      var form = document.getElementById('ribbonForm');
+      if (!form) return;
+      var slots = Array.from(form.querySelectorAll('.shelf-slot'));
+
+      function file(shelf) {
+        form.querySelector('input[name="shelf_type"]').value = shelf;
+        form.submit();
+      }
+
+      slots.forEach(function (slot) {
+        slot.addEventListener('click', function () { file(slot.dataset.shelf); });
+      });
+
+      if (!ribbon) return;
+      var startX = 0, startY = 0, dragging = false;
+
+      function slotAt(x, y) {
+        ribbon.style.pointerEvents = 'none';
+        var el = document.elementFromPoint(x, y);
+        ribbon.style.pointerEvents = '';
+        return el ? el.closest('.shelf-slot') : null;
+      }
+
+      ribbon.addEventListener('pointerdown', function (e) {
+        dragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        ribbon.classList.add('is-dragging');
+        ribbon.setPointerCapture(e.pointerId);
+        e.preventDefault();
+      });
+
+      ribbon.addEventListener('pointermove', function (e) {
+        if (!dragging) return;
+        ribbon.style.transform = 'translate(' + (e.clientX - startX) + 'px,' + (e.clientY - startY) + 'px)';
+        var over = slotAt(e.clientX, e.clientY);
+        slots.forEach(function (s) { s.classList.toggle('is-hover', s === over); });
+      });
+
+      ribbon.addEventListener('pointerup', function (e) {
+        if (!dragging) return;
+        dragging = false;
+        ribbon.classList.remove('is-dragging');
+        var target = slotAt(e.clientX, e.clientY);
+        slots.forEach(function (s) { s.classList.remove('is-hover'); });
+        if (target) {
+          file(target.dataset.shelf);
+        } else {
+          ribbon.style.transform = '';
+        }
+      });
+    })();
+  </script>
 {% endblock %}

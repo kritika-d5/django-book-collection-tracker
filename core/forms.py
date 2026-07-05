@@ -9,6 +9,11 @@ class SignUpForm(UserCreationForm):
         model = User
         fields = ('username', 'email')
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['username'].widget.attrs.update({'placeholder': 'Sign here', 'autocomplete': 'username'})
+        self.fields['email'].widget.attrs.update({'placeholder': 'you@example.com'})
+
 
 class ReviewForm(forms.ModelForm):
     rating = forms.ChoiceField(

@@ -1,0 +1,17 @@
+<div class="shelf-row">
+  {% for shelf_item in items %}
+    <div class="book-mini" style="--i: {{ forloop.counter0 }}">
+      <a href="{% url 'book_detail' shelf_item.book.id %}" class="mini-cover-link" title="{{ shelf_item.book.title }}">
+        {% if shelf_item.book.cover_image %}
+          <img class="mini-cover" src="{{ shelf_item.book.cover_image.url }}" alt="Cover for {{ shelf_item.book.title }}">
+        {% else %}
+          <img class="mini-cover" src="https://via.placeholder.com/96x138.png?text=No+Cover" alt="No cover available">
+        {% endif %}
+      </a>
+      <a href="{% url 'book_detail' shelf_item.book.id %}" class="mini-title">{{ shelf_item.book.title }}</a>
+      {% if show_review %}
+        <p class="mini-meta">{% if shelf_item.rating %}&#9733; {{ shelf_item.rating }}/5{% else %}unrated{% endif %} &middot; <a href="{% url 'review_book' shelf_item.id %}">review</a></p>
+      {% endif %}
+    </div>
+  {% endfor %}
+</div>

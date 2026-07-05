@@ -1,12 +1,27 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.views.decorators.http import require_POST
 from django.db.models import Q, Avg, Count, Prefetch
 from django.core.paginator import Paginator
+from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 from shelves.models import UserShelf, ReviewComment
 from books.models import Book, Genre, Author
 from .forms import SignUpForm, ReviewForm, CommentForm, ReplyForm
+
+
+def _attach_user_shelves(request, books):
+    if not request.user.is_authenticated:
+        return books
+    shelf_map = dict(
+        UserShelf.objects.filter(user=request.user, book__in=books)
+        .values_list('book_id', 'shelf_type')
+    )
+    for book in books:
+        book.user_shelf = shelf_map.get(book.id)
+    return books
 
 
 def home(request):
@@ -114,12 +129,21 @@ def book_detail(request, book_id):
             .order_by('-shelver_count', 'community__name')
         )
 
+    user_shelf_type = None
+    if request.user.is_authenticated:
+        user_shelf_type = (
+            UserShelf.objects.filter(user=request.user, book=book)
+            .values_list('shelf_type', flat=True)
+            .first()
+        )
+
     context = {
         'book': book,
         'reviews': reviews,
         'review_count': paginator.count,
         'avg_rating': avg_rating,
         'community_shelf_counts': community_shelf_counts,
+        'user_shelf_type': user_shelf_type,
     }
     return render(request, 'core/book_detail.html', context)
 
@@ -129,10 +153,12 @@ def search(request):
     results = []
 
     if query:
-        results = Book.objects.filter(
-            Q(title__icontains=query) |
-            Q(authors__name__icontains=query)
-        ).distinct().prefetch_related('authors')
+        results = _attach_user_shelves(request, list(
+            Book.objects.filter(
+                Q(title__icontains=query) |
+                Q(authors__name__icontains=query)
+            ).distinct().prefetch_related('authors')
+        ))
 
     context = {
         'query': query,
@@ -154,6 +180,10 @@ def add_to_shelf(request):
         book=book,
         defaults={'shelf_type': shelf_type}
     )
+
+    next_url = request.POST.get('next', '')
+    if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
+        return redirect(next_url)
     return redirect('dashboard')
 
 
@@ -199,6 +229,8 @@ def delete_comment(request, comment_id):
 
 
 def signup(request):
+    if request.user.is_authenticated:
+        return redirect('dashboard')
     if request.method == 'POST':
         form = SignUpForm(request.POST)
         if form.is_valid():
@@ -208,12 +240,17 @@ def signup(request):
     else:
         form = SignUpForm()
 
-    return render(request, 'core/signup.html', {'form': form})
+    context = {
+        'form': form,
+        'card_number': f'{User.objects.count() + 1:04d}',
+        'issue_date': timezone.localdate(),
+    }
+    return render(request, 'core/signup.html', context)
 
 
 def genre_detail(request, genre_id):
     genre = get_object_or_404(Genre, id=genre_id)
-    books = genre.books.all().prefetch_related('authors')
+    books = _attach_user_shelves(request, list(genre.books.all().prefetch_related('authors')))
 
     context = {
         'genre': genre,
@@ -224,7 +261,7 @@ def genre_detail(request, genre_id):
 
 def author_detail(request, author_id):
     author = get_object_or_404(Author, id=author_id)
-    books = author.books.all().prefetch_related('authors')
+    books = _attach_user_shelves(request, list(author.books.all().prefetch_related('authors')))
 
     context = {
         'author': author,

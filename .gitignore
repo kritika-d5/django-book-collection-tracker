@@ -12,6 +12,10 @@ ENV/
 # Django
 db.sqlite3
 media/
+staticfiles/
+
+# Claude Code
+.claude/
 
 # Environment variables
 .env

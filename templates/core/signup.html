@@ -1,48 +1,56 @@
 {% extends 'base.html' %}
+{% block title %}Sign Up · Athenaeum{% endblock %}
+{% block body_class %}signup-page{% endblock %}
 
 {% block content %}
-  <div class="form-container">
-    <h2>Sign Up</h2>
-    <form method="post">
-      {% csrf_token %}
+  <form method="post" class="library-card">
+    {% csrf_token %}
 
-      {% if form.non_field_errors %}
-        <div class="form-error">{{ form.non_field_errors }}</div>
-      {% endif %}
-
-      <div class="form-field">
-        <label for="{{ form.username.id_for_label }}">Username</label>
+    <div class="card-sign-row">
+      <div class="card-sign">
         {{ form.username }}
-        {% if form.username.errors %}
-          <div class="form-error">{{ form.username.errors }}</div>
-        {% endif %}
+        <span class="card-sign-line"></span>
       </div>
+      <span class="card-serial">{{ card_number }}</span>
+    </div>
+    <p class="card-fineprint">
+      THIS CARD IS NOT VALID WITHOUT A SIGNATURE. ALL MATERIALS CHECKED OUT MUST BE
+      ACCOMPANIED BY THIS CARD. MATERIALS NOT RETURNED IN 2 WEEKS ARE CONSIDERED OVERDUE.
+    </p>
+    {% if form.username.errors %}<div class="card-error">{{ form.username.errors }}</div>{% endif %}
+    {% if form.non_field_errors %}<div class="card-error">{{ form.non_field_errors }}</div>{% endif %}
 
-      <div class="form-field">
-        <label for="{{ form.email.id_for_label }}">Email (optional)</label>
-        {{ form.email }}
-        {% if form.email.errors %}
-          <div class="form-error">{{ form.email.errors }}</div>
-        {% endif %}
+    <div class="card-mast">
+      <h2>ATHENAEUM</h2>
+      <p>READER MEMBERSHIP CARD (R.M.C.)</p>
+    </div>
+
+    <div class="card-plate-row">
+      <label class="card-plate-label" for="{{ form.email.id_for_label }}">Em.</label>
+      <div class="card-plate">{{ form.email }}</div>
+      <div class="card-issue">
+        <span class="card-issue-label">Issue Date:</span>
+        <span class="card-issue-value">{{ issue_date|date:"y" }} <em>{{ issue_date|date:"dm" }}</em></span>
       </div>
+    </div>
+    {% if form.email.errors %}<div class="card-error">{{ form.email.errors }}</div>{% endif %}
 
-      <div class="form-field">
-        <label for="{{ form.password1.id_for_label }}">Password</label>
-        {{ form.password1 }}
-        {% if form.password1.errors %}
-          <div class="form-error">{{ form.password1.errors }}</div>
-        {% endif %}
-      </div>
+    <div class="card-rule-field">
+      <label for="{{ form.password1.id_for_label }}">Passphrase</label>
+      {{ form.password1 }}
+    </div>
+    {% if form.password1.errors %}<div class="card-error">{{ form.password1.errors }}</div>{% endif %}
 
-      <div class="form-field">
-        <label for="{{ form.password2.id_for_label }}">Confirm Password</label>
-        {{ form.password2 }}
-        {% if form.password2.errors %}
-          <div class="form-error">{{ form.password2.errors }}</div>
-        {% endif %}
-      </div>
+    <div class="card-rule-field">
+      <label for="{{ form.password2.id_for_label }}">Confirm</label>
+      {{ form.password2 }}
+    </div>
+    {% if form.password2.errors %}<div class="card-error">{{ form.password2.errors }}</div>{% endif %}
 
-      <button type="submit">Sign Up</button>
-    </form>
-  </div>
+    <button type="submit" class="card-stamp">Issue Card</button>
+  </form>
+
+  <p class="meta-text" style="text-align:center;margin-top:18px;">
+    Already a member? <a href="{% url 'login' %}">Log in</a>
+  </p>
 {% endblock %}

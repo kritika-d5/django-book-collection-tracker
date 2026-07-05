@@ -14,7 +14,7 @@
   <h3>Results</h3>
 
   {% if results %}
-    <p class="meta-text">Found {{ results.count }} book{{ results.count|pluralize }} matching "{{ query }}".</p>
+    <p class="meta-text">Found {{ results|length }} book{{ results|length|pluralize }} matching "{{ query }}".</p>
     <div class="book-list">
       {% for book in results %}
         {% include 'core/partials/_book_card.html' with book=book show_shelf_form=True %}

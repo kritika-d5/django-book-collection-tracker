@@ -1,14 +1,6 @@
 {% extends 'base.html' %}
-{% load static %}
 
 {% block body_class %}landing{% endblock %}
-
-{% block extra_head %}
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{% static 'landing.css' %}">
-{% endblock %}
 
 {% block content %}
   <div class="reading-room">
@@ -18,14 +10,14 @@
 
     <header class="room-hero">
       <p class="room-eyebrow">The Reading Room</p>
-      <h1 class="room-title">My Shelves</h1>
+      <h1 class="room-title">Athenaeum</h1>
       <p class="room-tagline">Track what you read, browse the stacks by lamplight, and join circles of fellow readers.</p>
       <div class="room-actions">
         {% if not user.is_authenticated %}
           <a href="{% url 'signup' %}" class="room-btn room-btn--primary">Take a Seat</a>
           <a href="{% url 'login' %}" class="room-btn room-btn--brass">Log In</a>
         {% else %}
-          <a href="{% url 'dashboard' %}" class="room-btn room-btn--primary">My Dashboard</a>
+          <a href="{% url 'dashboard' %}" class="room-btn room-btn--primary">My Shelves</a>
           <a href="{% url 'search' %}" class="room-btn room-btn--brass">Search the Stacks</a>
         {% endif %}
       </div>
