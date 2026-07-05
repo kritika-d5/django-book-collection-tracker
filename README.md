@@ -4,6 +4,15 @@ A personal book tracker with a "living bookshelf" aesthetic — a dark-academia
 reading room where you shelve books, write reviews, and join reader circles.
 Built with Django.
 
+<img width="421" height="361" alt="image" src="https://github.com/user-attachments/assets/073f8a97-57a3-44e9-96a9-5258bc2327e9" />
+
+<img width="401" height="329" alt="image" src="https://github.com/user-attachments/assets/93962b3c-ba6a-40ee-aa5f-dc7a16255d66" />
+
+<img width="542" height="401" alt="image" src="https://github.com/user-attachments/assets/61347e6f-7660-4496-bc72-0c08ac29a505" />
+
+<img width="589" height="308" alt="image" src="https://github.com/user-attachments/assets/bd804592-0ee6-4310-ad05-cdeaa7a97d3e" />
+
+
 ## Features
 
 - **Three shelves** — file any book under *Want to Read*, *Currently Reading*,
