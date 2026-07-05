@@ -13,7 +13,18 @@ def home(request):
     from django.db.models import Count
     from communities.models import Community
 
-    genres = Genre.objects.all()
+    genres = (
+        Genre.objects.annotate(book_total=Count('books'))
+        .filter(book_total__gt=0)
+        .order_by('-book_total', 'name')
+        .prefetch_related(
+            Prefetch(
+                'books',
+                queryset=Book.objects.only('id', 'title').order_by('id')[:12],
+                to_attr='shelf_books',
+            )
+        )
+    )
     popular_communities = (
         Community.objects.filter(is_public=True)
         .annotate(annotated_member_count=Count('memberships'))

@@ -1,52 +1,97 @@
 {% extends 'base.html' %}
+{% load static %}
+
+{% block body_class %}landing{% endblock %}
+
+{% block extra_head %}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'landing.css' %}">
+{% endblock %}
 
 {% block content %}
-  <div class="hero">
-    <h1>Your Personal Book Tracker</h1>
-    <p>Discover books, track your reading, share reviews, and join reader communities.</p>
-    {% if not user.is_authenticated %}
-      <div class="hero-actions">
-        <a href="{% url 'login' %}" class="btn">Log In</a>
-        <a href="{% url 'signup' %}" class="btn btn--secondary">Sign Up</a>
+  <div class="reading-room">
+    <div class="lamp-glow" aria-hidden="true"></div>
+    <div class="dust dust--near" aria-hidden="true"></div>
+    <div class="dust dust--far" aria-hidden="true"></div>
+
+    <header class="room-hero">
+      <p class="room-eyebrow">The Reading Room</p>
+      <h1 class="room-title">My Shelves</h1>
+      <p class="room-tagline">Track what you read, browse the stacks by lamplight, and join circles of fellow readers.</p>
+      <div class="room-actions">
+        {% if not user.is_authenticated %}
+          <a href="{% url 'signup' %}" class="room-btn room-btn--primary">Take a Seat</a>
+          <a href="{% url 'login' %}" class="room-btn room-btn--brass">Log In</a>
+        {% else %}
+          <a href="{% url 'dashboard' %}" class="room-btn room-btn--primary">My Dashboard</a>
+          <a href="{% url 'search' %}" class="room-btn room-btn--brass">Search the Stacks</a>
+        {% endif %}
       </div>
-    {% else %}
-      <div class="hero-actions">
-        <a href="{% url 'dashboard' %}" class="btn">Go to Dashboard</a>
-        <a href="{% url 'search' %}" class="btn btn--secondary">Search Books</a>
-      </div>
+    </header>
+
+    <section class="stacks" aria-label="Browse by genre">
+      {% for genre in genres %}
+        <div class="shelf-unit" style="--shelf-i: {{ forloop.counter0 }}">
+          <div class="shelf-books">
+            {% for book in genre.shelf_books %}
+              <a href="{% url 'book_detail' book.id %}"
+                 class="spine {% cycle 'spine--burgundy' 'spine--forest' 'spine--navy' 'spine--ochre' 'spine--aubergine' 'spine--slate' %} {% cycle 'spine--h3' 'spine--h1' 'spine--h4' 'spine--h2' 'spine--h5' %} {% cycle 'spine--tilt-none' 'spine--tilt-none' 'spine--tilt-l' 'spine--tilt-none' 'spine--tilt-r' 'spine--tilt-none' 'spine--tilt-l2' %}"
+                 style="--book-i: {{ forloop.counter0 }}"
+                 title="{{ book.title }}">
+                <span class="spine-title">{{ book.title }}</span>
+              </a>
+            {% empty %}
+              <span class="shelf-empty">This shelf awaits its first book.</span>
+            {% endfor %}
+          </div>
+          <div class="plank">
+            <a href="{% url 'genre_detail' genre.id %}" class="brass-plate" data-walk-in>
+              {{ genre.name }}
+              <span class="brass-count">{{ genre.book_total }}</span>
+            </a>
+          </div>
+        </div>
+      {% empty %}
+        <div class="shelf-empty shelf-empty--room">The stacks are empty. Import some books to fill the room.</div>
+      {% endfor %}
+    </section>
+
+    {% if popular_communities %}
+      <section class="circles" aria-label="Popular communities">
+        <div class="circles-header">
+          <h2>Reading Circles</h2>
+          <a href="{% url 'community_list' %}" class="room-btn room-btn--brass room-btn--small">View All</a>
+        </div>
+        <div class="circles-grid">
+          {% for community in popular_communities %}
+            <a href="{% url 'community_detail' community.slug %}" class="circle-card">
+              <h3>{{ community.name }}</h3>
+              <p>{{ community.description|truncatewords:18 }}</p>
+              <span class="circle-meta">{{ community.member_count }} member{{ community.member_count|pluralize }}</span>
+            </a>
+          {% endfor %}
+        </div>
+      </section>
     {% endif %}
   </div>
 
-  <hr class="section-divider">
-
-  <div class="section-header">
-    <h2>Browse by Genre</h2>
-  </div>
-
-  <div class="book-list">
-    {% for genre in genres %}
-      <a href="{% url 'genre_detail' genre.id %}" class="genre-card">
-        <strong>{{ genre.name }}</strong>
-      </a>
-    {% empty %}
-      <div class="empty-state">No genres available yet.</div>
-    {% endfor %}
-  </div>
-
-  {% if popular_communities %}
-    <hr class="section-divider">
-    <div class="section-header">
-      <h2>Popular Communities</h2>
-      <a href="{% url 'community_list' %}" class="btn btn--small btn--secondary">View All</a>
-    </div>
-    <div class="community-grid">
-      {% for community in popular_communities %}
-        <a href="{% url 'community_detail' community.slug %}" class="community-card">
-          <h3>{{ community.name }}</h3>
-          <p>{{ community.description|truncatewords:20 }}</p>
-          <span class="community-meta">{{ community.member_count }} member{{ community.member_count|pluralize }}</span>
-        </a>
-      {% endfor %}
-    </div>
-  {% endif %}
+  <script>
+    (function () {
+      var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (reduced) return;
+      var room = document.querySelector('.reading-room');
+      document.querySelectorAll('[data-walk-in]').forEach(function (plate) {
+        plate.addEventListener('click', function (e) {
+          e.preventDefault();
+          var href = plate.getAttribute('href');
+          var unit = plate.closest('.shelf-unit');
+          if (unit) unit.classList.add('shelf-unit--focus');
+          room.classList.add('room-walk-in');
+          setTimeout(function () { window.location.href = href; }, 320);
+        });
+      });
+    })();
+  </script>
 {% endblock %}
