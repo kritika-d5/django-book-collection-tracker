@@ -12,7 +12,8 @@ ENV/
 # Django
 db.sqlite3
 media/
-staticfiles/
+# NOTE: staticfiles/ is intentionally committed so Vercel's serverless function
+# can serve it via WhiteNoise. Re-run `collectstatic` and commit after CSS/JS changes.
 
 # Claude Code
 .claude/
