@@ -35,9 +35,13 @@ if _hosts:
     ALLOWED_HOSTS += [h.strip() for h in _hosts.split(',') if h.strip()]
 
 # CSRF needs trusted origins (with scheme) for POST forms on the live HTTPS domain.
-CSRF_TRUSTED_ORIGINS = [
-    f'https://{h}' for h in ALLOWED_HOSTS if h not in ('localhost', '127.0.0.1')
-]
+# A leading-dot host like ".vercel.app" becomes the wildcard "https://*.vercel.app".
+CSRF_TRUSTED_ORIGINS = []
+for _h in ALLOWED_HOSTS:
+    if _h in ('localhost', '127.0.0.1'):
+        continue
+    _prefix = 'https://*.' if _h.startswith('.') else 'https://'
+    CSRF_TRUSTED_ORIGINS.append(f'{_prefix}{_h.lstrip(".")}')
 
 
 # Application definition
@@ -92,11 +96,14 @@ WSGI_APPLICATION = 'book_tracker_project.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
+import dj_database_url
+
+# Uses DATABASE_URL (e.g. a Neon Postgres URL) when set; falls back to local SQLite.
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default=f'sqlite:///{BASE_DIR / "db.sqlite3"}',
+        conn_max_age=0,  # serverless: don't hold connections between invocations
+    )
 }
 
 
@@ -150,9 +157,31 @@ LOGIN_URL = 'login'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
 
+# File storage:
+#   - static files always via WhiteNoise (compressed)
+#   - media (uploaded covers) via Cloudinary when CLOUDINARY_URL is set. This is
+#     required on read-only hosts like Vercel; without it, uploads fall back to
+#     the local disk (fine for local development).
+CLOUDINARY_URL = os.environ.get('CLOUDINARY_URL')
+if CLOUDINARY_URL:
+    INSTALLED_APPS += ['cloudinary', 'cloudinary_storage']
+
+STORAGES = {
+    'default': {
+        'BACKEND': (
+            'cloudinary_storage.storage.MediaCloudinaryStorage'
+            if CLOUDINARY_URL
+            else 'django.core.files.storage.FileSystemStorage'
+        ),
+    },
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedStaticFilesStorage',
+    },
+}
+
 # Extra hardening, applied only in production (DEBUG=False).
 if not DEBUG:
-    # PythonAnywhere terminates SSL at its proxy and forwards this header;
+    # Hosts behind an HTTPS proxy (Vercel, PythonAnywhere, …) forward this header;
     # it lets Django know the original request was HTTPS (prevents redirect loops).
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     SECURE_SSL_REDIRECT = os.environ.get('DJANGO_SSL_REDIRECT', 'True') == 'True'
