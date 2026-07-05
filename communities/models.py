@@ -33,6 +33,8 @@ class Community(models.Model):
 
     @property
     def member_count(self):
+        if hasattr(self, 'annotated_member_count'):
+            return self.annotated_member_count
         return self.memberships.count()
 
 

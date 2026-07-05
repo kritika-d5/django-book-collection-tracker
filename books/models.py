@@ -21,3 +21,11 @@ class Book(models.Model):
 
     def __str__(self):
         return self.title
+
+    @property
+    def primary_author(self):
+        # Use .all()[0] rather than .first(): when authors are prefetched this
+        # reads from the prefetch cache (no extra query), whereas .first()
+        # re-orders the queryset and always hits the database (an N+1 in lists).
+        authors = self.authors.all()
+        return authors[0] if authors else None

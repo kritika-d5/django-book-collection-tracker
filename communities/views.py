@@ -21,7 +21,7 @@ def _is_moderator(membership):
 def community_list(request):
     communities = (
         Community.objects.filter(is_public=True)
-        .annotate(member_count=Count('memberships'))
+        .annotate(annotated_member_count=Count('memberships'))
         .order_by('name')
     )
     joined = []
@@ -58,7 +58,7 @@ def community_create(request):
 
 def community_detail(request, slug):
     community = get_object_or_404(
-        Community.objects.annotate(member_count=Count('memberships')),
+        Community.objects.annotate(annotated_member_count=Count('memberships')),
         slug=slug,
     )
     if not community.is_public and not _get_membership(community, request.user):

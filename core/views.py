@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
-from django.db.models import Q, Avg, Prefetch
+from django.db.models import Q, Avg, Count, Prefetch
 from django.core.paginator import Paginator
 from shelves.models import UserShelf, ReviewComment
 from books.models import Book, Genre, Author
@@ -16,8 +16,8 @@ def home(request):
     genres = Genre.objects.all()
     popular_communities = (
         Community.objects.filter(is_public=True)
-        .annotate(member_count=Count('memberships'))
-        .order_by('-member_count')[:3]
+        .annotate(annotated_member_count=Count('memberships'))
+        .order_by('-annotated_member_count')[:3]
     )
 
     context = {
@@ -84,11 +84,31 @@ def book_detail(request, book_id):
     page_number = request.GET.get('page')
     reviews = paginator.get_page(page_number)
 
+    # For a logged-in user, show which of their communities have members who
+    # have this book on a shelf — a tie-in between the shelves and communities
+    # apps. Both `__in` clauses stay as lazy subqueries (no extra round-trips).
+    community_shelf_counts = []
+    if request.user.is_authenticated:
+        from communities.models import CommunityMembership
+
+        my_community_ids = CommunityMembership.objects.filter(
+            user=request.user
+        ).values_list('community_id', flat=True)
+        shelver_ids = UserShelf.objects.filter(book=book).values_list('user_id', flat=True)
+        community_shelf_counts = (
+            CommunityMembership.objects
+            .filter(community_id__in=my_community_ids, user_id__in=shelver_ids)
+            .values('community__name', 'community__slug')
+            .annotate(shelver_count=Count('user_id', distinct=True))
+            .order_by('-shelver_count', 'community__name')
+        )
+
     context = {
         'book': book,
         'reviews': reviews,
         'review_count': paginator.count,
         'avg_rating': avg_rating,
+        'community_shelf_counts': community_shelf_counts,
     }
     return render(request, 'core/book_detail.html', context)
 

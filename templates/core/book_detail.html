@@ -57,6 +57,20 @@
     <div class="empty-state">No ratings submitted yet.</div>
   {% endif %}
 
+  {% if community_shelf_counts %}
+    <div class="section-header">
+      <h3>Popular in your communities</h3>
+    </div>
+    <ul class="community-shelf-list">
+      {% for c in community_shelf_counts %}
+        <li>
+          <a href="{% url 'community_detail' c.community__slug %}">{{ c.community__name }}</a>
+          &mdash; shelved by {{ c.shelver_count }} member{{ c.shelver_count|pluralize }}
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
   <div class="section-header">
     <h3>Community Reviews</h3>
   </div>

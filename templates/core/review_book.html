@@ -14,13 +14,17 @@
       </div>
       <div class="book-detail-text">
         <h3>{{ shelf_item.book.title }}</h3>
-        <p class="book-meta">by <strong>{{ shelf_item.book.authors.first.name }}</strong></p>
+        <p class="book-meta">by <strong>{{ shelf_item.book.primary_author.name|default:"Unknown author" }}</strong></p>
       </div>
     </div>
   </div>
 
   <form method="POST">
     {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="empty-state">{{ form.non_field_errors }}</div>
+    {% endif %}
 
     <div class="form-field">
       <label for="{{ form.rating.id_for_label }}">Your Rating (1-5)</label>

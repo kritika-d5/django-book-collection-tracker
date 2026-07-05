@@ -54,7 +54,7 @@
           <a href="{% url 'book_detail' shelf_item.book.id %}">
             <strong>{{ shelf_item.book.title }}</strong>
           </a>
-          <p class="book-author">by {{ shelf_item.book.authors.first.name }}</p>
+          <p class="book-author">by {{ shelf_item.book.primary_author.name|default:"Unknown author" }}</p>
           <p class="meta-text">Your rating: {{ shelf_item.rating|default:"Not rated" }}</p>
 
           {% if shelf_item.review %}
